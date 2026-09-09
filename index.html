@@ -859,7 +859,8 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
 
 <div class="stage" id="stage">
   <div class="plate">
-    <video class="plate-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+    <video class="plate-video" autoplay muted loop playsinline preload="auto" poster="poster.jpg" aria-hidden="true">
+      <source media="(max-width: 900px)" src="hero-mobile.mp4" type="video/mp4">
       <source src="hero.mp4" type="video/mp4">
     </video>
   </div>
