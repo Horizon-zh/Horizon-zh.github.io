@@ -1,0 +1,8 @@
+# 不部署：抖音主页截图（网站已不引用）
+douyin.jpg
+
+# 系统/编辑器杂项
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
