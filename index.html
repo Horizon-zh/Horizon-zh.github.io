@@ -867,10 +867,10 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
     <video class="plate-video" id="heroVideo" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
   </div>
   <script>
-  /* CDN 多源：jsDelivr（国内节点）→ statically → 本站同源兜底 */
+  /* CDN 多源：jsDelivr 国内节点 → jsDelivr(gcore 备用节点) → 本站同源兜底 */
   var CDN_BASES = [
     'https://cdn.jsdelivr.net/gh/Horizon-zh/Horizon-zh.github.io@main/',
-    'https://cdn.statically.io/gh/Horizon-zh/Horizon-zh.github.io/main/',
+    'https://gcore.jsdelivr.net/gh/Horizon-zh/Horizon-zh.github.io@main/',
     ''
   ];
   /* 图片按 CDN 顺序加载，失败自动换下一个源 */
