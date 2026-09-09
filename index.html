@@ -75,6 +75,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   width: 100%; height: 100%;
   display: block; pointer-events: none;
 }
+.plate-video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: 44% center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .9s ease;
+}
+.plate-video.is-ready { opacity: 1; }
 .plate::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background:
@@ -853,9 +864,28 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
 <div class="stage" id="stage">
   <div class="plate">
     <canvas class="plate-canvas" id="starfield" aria-hidden="true"></canvas>
+    <video class="plate-video" id="heroVideo" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
   </div>
   <script>
-  /* Hero 动态背景：纯 Canvas 星空（零资源加载，全平台/微信流畅播放） */
+  /* CDN 多源：jsDelivr（国内节点）→ statically → 本站同源兜底 */
+  var CDN_BASES = [
+    'https://cdn.jsdelivr.net/gh/Horizon-zh/Horizon-zh.github.io@main/',
+    'https://cdn.statically.io/gh/Horizon-zh/Horizon-zh.github.io/main/',
+    ''
+  ];
+  /* 图片按 CDN 顺序加载，失败自动换下一个源 */
+  window.cdnImg = function(img, rel) {
+    var i = 0;
+    img.onerror = function() {
+      i++;
+      if (i < CDN_BASES.length) img.src = CDN_BASES[i] + rel;
+      else img.onerror = null;
+    };
+    img.src = CDN_BASES[0] + rel;
+  };
+  </script>
+  <script>
+  /* Hero 动态背景：纯 Canvas 星空（视频加载前的动态底衬，零资源等待） */
   (function() {
     var canvas = document.getElementById('starfield');
     if (!canvas) return;
@@ -909,6 +939,56 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
     }
     resize(); tick();
     window.addEventListener('resize', resize);
+  })();
+  </script>
+  <script>
+  /* Hero 视频：CDN 加速 + 多源降级 + 微信自动播放兼容；加载前透出星空底衬 */
+  (function() {
+    var v = document.getElementById('heroVideo');
+    if (!v) return;
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+    v.setAttribute('x5-video-player-type', 'h5');
+    v.setAttribute('x5-video-player-fullscreen', 'false');
+    v.muted = true;
+
+    var file = window.innerWidth <= 900 ? 'hero-mobile.mp4' : 'hero.mp4';
+    var idx = 0;
+    function trySrc() {
+      v.src = CDN_BASES[idx] + file;
+      v.load();
+      play();
+    }
+    function play() {
+      v.muted = true;
+      var p = v.play();
+      if (p && p.catch) p.catch(function() {});
+    }
+    v.addEventListener('error', function() {
+      idx++;
+      if (idx < CDN_BASES.length) trySrc();  // 当前 CDN 失败 → 下一个源
+    });
+    v.addEventListener('loadeddata', function() { v.classList.add('is-ready'); play(); });
+    v.addEventListener('canplay', play);
+
+    // 微信浏览器桥接 + 首次触摸兜底
+    document.addEventListener('WeixinJSBridgeReady', play, false);
+    document.addEventListener('YixinJSBridgeReady', play, false);
+    ['touchstart', 'click'].forEach(function(ev) {
+      window.addEventListener(ev, play, { once: true, passive: true });
+    });
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) play(); });
+
+    trySrc();
+
+    var rt;
+    window.addEventListener('resize', function() {
+      clearTimeout(rt);
+      rt = setTimeout(function() {
+        var f = window.innerWidth <= 900 ? 'hero-mobile.mp4' : 'hero.mp4';
+        if (f !== file) { file = f; idx = 0; v.classList.remove('is-ready'); trySrc(); }
+      }, 300);
+    });
   })();
   </script>
 
@@ -1006,7 +1086,7 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
     <div class="avatar-block fade-slide">
       <div class="avatar-ring"></div>
       <div class="avatar-inner">
-        <img src="logo.jpg" alt="贺智浩大头照" loading="lazy">
+        <img data-cdn="logo.jpg" alt="贺智浩大头照" loading="lazy">
       </div>
     </div>
     <div class="fade-slide">
@@ -1427,6 +1507,10 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
   for (var pi = 1; pi <= 15; pi++) { PHOTO_FILES.push('photo' + pi + '.jpg'); }
 
   /* ════════ 灯箱（Lightbox）════════ */
+  // 头像等静态图片走 CDN
+  document.querySelectorAll('img[data-cdn]').forEach(function(img) {
+    cdnImg(img, img.getAttribute('data-cdn'));
+  });
   var lb = document.getElementById('lightbox');
   var lbImg = document.getElementById('lbImg');
   var lbCap = document.getElementById('lbCaption');
@@ -1436,7 +1520,7 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
   function lbShow(i) {
     if (!lbItems.length) return;
     lbIdx = (i + lbItems.length) % lbItems.length;
-    lbImg.src = lbItems[lbIdx].src;
+    cdnImg(lbImg, lbItems[lbIdx].src);  // CDN 多源加载原图
     lbImg.alt = lbItems[lbIdx].caption;
     lbCap.textContent = lbItems[lbIdx].caption;
     lbCnt.textContent = (lbIdx + 1) + ' / ' + lbItems.length;
@@ -1505,7 +1589,7 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
       it.loaded = true;
       var mark = function() { it.img.classList.add('is-loaded'); };
       if (it.img.complete) mark(); else it.img.addEventListener('load', mark, { once: true });
-      it.img.src = it.img.getAttribute('data-src');
+      cdnImg(it.img, it.img.getAttribute('data-src'));  // CDN 多源加载缩略图
       if (i === current) { it.img.setAttribute('fetchpriority', 'high'); }
     }
 
@@ -1538,9 +1622,9 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
       // 按需加载：当前 ±（range+1）张缩略图（仅在轮播滚入视口后）
       if (primed) {
         for (var k = current - range - 1; k <= current + range + 1; k++) ensureLoaded(k);
-        // 后台预取当前张原图，灯箱打开时秒显
+        // 后台预取当前张原图（CDN），灯箱打开时秒显
         var cur = items[current];
-        if (cur && !cur.fullPre) { cur.fullPre = true; new Image().src = cur.src; }
+        if (cur && !cur.fullPre) { cur.fullPre = true; new Image().src = CDN_BASES[0] + cur.src; }
       }
       counter.textContent = (current + 1) + ' / ' + items.length;
       progress.style.width = ((current + 1) / items.length * 100) + '%';
