@@ -859,11 +859,28 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
 
 <div class="stage" id="stage">
   <div class="plate">
-    <video class="plate-video" autoplay muted loop playsinline preload="auto" poster="poster.jpg" aria-hidden="true">
-      <source media="(max-width: 900px)" src="hero-mobile.mp4" type="video/mp4">
-      <source src="hero.mp4" type="video/mp4">
-    </video>
+    <video class="plate-video" id="heroVideo" autoplay muted loop playsinline preload="auto" poster="poster.jpg" aria-hidden="true"></video>
   </div>
+  <script>
+  /* Hero 视频按视口确定性选源：手机 108KB 小版本 / 桌面 483KB 版本 */
+  (function() {
+    var v = document.getElementById('heroVideo');
+    if (!v) return;
+    function pick() {
+      var src = window.innerWidth <= 900 ? 'hero-mobile.mp4' : 'hero.mp4';
+      if (v.getAttribute('data-picked') !== src) {
+        v.setAttribute('data-picked', src);
+        v.src = src;
+        var p = v.play();
+        if (p && p.catch) p.catch(function() {});
+      }
+    }
+    pick();
+    var t;
+    window.addEventListener('resize', function() { clearTimeout(t); t = setTimeout(pick, 300); });
+    v.addEventListener('error', function() { v.style.display = 'none'; }, true);  // 极端失败时保留 poster/CSS 渐变底
+  })();
+  </script>
 
   <header class="topbar">
     <a class="brand" href="#" aria-label="贺智浩首页">
