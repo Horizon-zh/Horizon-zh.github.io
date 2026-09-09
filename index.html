@@ -859,7 +859,9 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
 
 <div class="stage" id="stage">
   <div class="plate">
-    <video class="plate-video" id="heroVideo" autoplay muted loop playsinline preload="none" aria-hidden="true"></video>
+    <video class="plate-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+      <source src="hero.mp4" type="video/mp4">
+    </video>
   </div>
 
   <header class="topbar">
@@ -1308,21 +1310,6 @@ body.is-open .menu-foot { opacity: 1; transform: translateY(0); }
 
 <script>
 (function() {
-  /* ════════ Hero 视频：仅桌面宽屏 + 非省流 + 4G/WiFi 才加载 ════════ */
-  (function() {
-    var video = document.getElementById('heroVideo');
-    if (!video) return;
-    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    var slow = conn && (conn.saveData || /(^|-)(2g|3g|slow-2g)$/.test(conn.effectiveType || ''));
-    var wide = window.matchMedia('(min-width: 900px)').matches &&
-               window.innerWidth >= 900 && document.documentElement.clientWidth >= 900;
-    if (!wide || slow) return;  // 手机 / 窄屏 / 省流弱网：完全不请求视频，使用 CSS 渐变背景
-    video.innerHTML = '<source src="https://r2.motionsites.dev/motionsites/assets/13c2dff571ba.mp4" type="video/mp4">';
-    video.load();
-    var p = video.play();
-    if (p && p.catch) p.catch(function() {});
-  })();
-
   var burger = document.getElementById('burger');
   var menu = document.getElementById('menu');
 
